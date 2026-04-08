@@ -247,13 +247,16 @@ async function loadAllVotes() {
   const url = getScriptUrl();
   if (!url) return;
   try {
-    const resp = await fetch(url + '?t=' + Date.now());
-    const data = await resp.json();
-    allVotes = data;
-    renderVoters();
+    const resp = await fetch(url + '?t=' + Date.now(), { redirect: 'follow' });
+    const text = await resp.text();
+    if (text) {
+      const data = JSON.parse(text);
+      allVotes = data;
+    }
   } catch (e) {
     console.error('Failed to load votes:', e);
   }
+  renderVoters();
 }
 
 // --- Voter bar ---
@@ -457,6 +460,7 @@ function renderResults() {
 }
 
 // Init
+renderVoters();
 checkSetup();
 loadAllVotes();
 </script>
