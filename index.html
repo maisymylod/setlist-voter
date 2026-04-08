@@ -228,12 +228,10 @@ async function submitToSheet(voter, girl, ranks) {
     showBanner('voteBanner', 'Submitting vote...', '');
     const resp = await fetch(url, {
       method: 'POST',
-      mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ voter, girl, ranks })
+      body: JSON.stringify({ voter, girl, ranks }),
+      redirect: 'follow'
     });
-    // no-cors means we can't read the response, so we wait a beat then reload
-    await new Promise(r => setTimeout(r, 1500));
     await loadAllVotes();
     showBanner('voteBanner', `${voter}'s vote saved!`, 'success');
     return true;
