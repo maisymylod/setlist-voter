@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Band Setlist Vote</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f0f1a; color: #e0e0e0; min-height: 100vh; }
+
+    .header { text-align: center; padding: 2rem 1rem 1rem; }
+    .header h1 { font-size: 2rem; background: linear-gradient(135deg, #f97316, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .header p { color: #888; margin-top: .3rem; }
+
+    /* Tabs */
+    .tabs { display: flex; justify-content: center; gap: .5rem; margin: 1rem auto; max-width: 600px; }
+    .tab-btn { padding: .6rem 1.4rem; border: none; border-radius: 999px; background: #1e1e2e; color: #888; cursor: pointer; font-size: .95rem; transition: all .2s; }
+    .tab-btn.active { background: linear-gradient(135deg, #f97316, #ec4899); color: #fff; }
+    .tab-panel { display: none; max-width: 700px; margin: 0 auto; padding: 1rem; }
+    .tab-panel.active { display: block; }
+
+    /* Voter avatars */
+    .voter-bar { display: flex; justify-content: center; gap: 1rem; margin: 1.5rem 0; flex-wrap: wrap; }
+    .voter-btn { display: flex; flex-direction: column; align-items: center; gap: .3rem; cursor: pointer; border: none; background: none; }
+    .voter-btn .avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: #fff; border: 3px solid transparent; transition: all .2s; }
+    .voter-btn .avatar.selected { border-color: #f97316; box-shadow: 0 0 16px #f9731655; transform: scale(1.1); }
+    .voter-btn span { font-size: .8rem; color: #aaa; }
+    .voter-btn .avatar.selected + span { color: #f97316; }
+
+    .av-bassy { background: #6366f1; }
+    .av-ethan { background: #10b981; }
+    .av-john { background: #ef4444; }
+    .av-will { background: #f59e0b; }
+    .av-maisy { background: #ec4899; }
+
+    /* Cards */
+    .section-title { font-size: 1.2rem; font-weight: 600; margin: 1.5rem 0 .5rem; }
+    .section-sub { color: #888; font-size: .85rem; margin-bottom: 1rem; }
+
+    .song-option { display: flex; align-items: center; padding: .75rem 1rem; margin: .4rem 0; background: #1a1a2e; border-radius: 10px; cursor: pointer; transition: all .15s; border: 2px solid transparent; }
+    .song-option:hover { background: #22223a; }
+    .song-option.selected { border-color: #f97316; background: #2a1a10; }
+    .song-option .radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #555; margin-right: 1rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .song-option.selected .radio { border-color: #f97316; }
+    .song-option.selected .radio::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #f97316; }
+    .song-option .song-name { font-size: 1rem; }
+
+    /* Ranking */
+    .rank-pool-label { font-size: .9rem; color: #888; margin: 1rem 0 .5rem; }
+    .rank-pool { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1.5rem; }
+    .pool-chip { padding: .45rem .8rem; background: #1a1a2e; border-radius: 8px; cursor: pointer; font-size: .85rem; transition: all .15s; border: 1px solid #333; user-select: none; }
+    .pool-chip:hover { background: #22223a; border-color: #555; }
+    .pool-chip.used { opacity: .35; pointer-events: none; }
+
+    .rank-slots { counter-reset: rank; }
+    .rank-slot { display: flex; align-items: center; gap: .8rem; padding: .65rem 1rem; margin: .35rem 0; background: #1a1a2e; border-radius: 10px; border: 2px dashed #333; min-height: 48px; transition: all .15s; }
+    .rank-slot.filled { border-style: solid; border-color: #444; }
+    .rank-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; flex-shrink: 0; }
+    .rank-1 .rank-num { background: #f97316; color: #fff; }
+    .rank-2 .rank-num { background: #f59e0b; color: #000; }
+    .rank-3 .rank-num { background: #eab308; color: #000; }
+    .rank-slot .rank-num { background: #333; color: #aaa; }
+    .rank-slot.filled .rank-num { background: #f97316; color: #fff; }
+    .rank-slot .rank-song { flex: 1; color: #888; font-size: .9rem; }
+    .rank-slot.filled .rank-song { color: #e0e0e0; }
+    .rank-slot .remove-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 1.1rem; padding: .2rem .5rem; border-radius: 6px; }
+    .rank-slot .remove-btn:hover { background: #2a1515; color: #ef4444; }
+
+    .submit-btn { display: block; width: 100%; margin: 1.5rem 0; padding: .9rem; border: none; border-radius: 12px; background: linear-gradient(135deg, #f97316, #ec4899); color: #fff; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: opacity .2s; }
+    .submit-btn:disabled { opacity: .4; cursor: default; }
+    .submit-btn:not(:disabled):hover { opacity: .9; }
+
+    /* Results */
+    .results-section { margin: 1.5rem 0; }
+    .results-section h3 { font-size: 1.1rem; margin-bottom: .8rem; color: #f97316; }
+    .result-row { display: flex; align-items: center; padding: .6rem 1rem; margin: .25rem 0; background: #1a1a2e; border-radius: 8px; }
+    .result-rank { width: 30px; font-weight: 700; color: #f97316; }
+    .result-song { flex: 1; }
+    .result-score { font-weight: 600; color: #f59e0b; }
+    .result-voters { font-size: .8rem; color: #888; margin-left: .8rem; }
+    .winner-badge { display: inline-block; padding: .15rem .5rem; background: #f97316; color: #fff; border-radius: 999px; font-size: .7rem; font-weight: 600; margin-left: .5rem; }
+    .preset-badge { display: inline-block; padding: .15rem .5rem; background: #333; color: #aaa; border-radius: 999px; font-size: .7rem; margin-left: .5rem; }
+
+    .no-votes { text-align: center; color: #555; padding: 2rem; font-size: 1rem; }
+
+    .girl-result-row { display: flex; align-items: center; padding: .6rem 1rem; margin: .25rem 0; background: #1a1a2e; border-radius: 8px; }
+    .girl-result-row.winner { background: #2a1a10; border: 1px solid #f97316; }
+    .girl-votes-bar { height: 6px; background: #f97316; border-radius: 3px; margin: 0 1rem; transition: width .3s; }
+
+    .final-setlist { background: linear-gradient(135deg, #1a1025, #10151a); border: 1px solid #333; border-radius: 12px; padding: 1.2rem; margin-top: 1.5rem; }
+    .final-setlist h3 { margin-bottom: .8rem; }
+    .setlist-item { padding: .4rem 0; border-bottom: 1px solid #222; display: flex; align-items: center; gap: .5rem; }
+    .setlist-item:last-child { border: none; }
+    .setlist-num { color: #f97316; font-weight: 600; width: 24px; }
+
+    .vote-status { display: flex; gap: .4rem; margin: 1rem 0; flex-wrap: wrap; }
+    .vote-chip { padding: .25rem .6rem; border-radius: 999px; font-size: .75rem; }
+    .vote-chip.voted { background: #1a3a1a; color: #4ade80; }
+    .vote-chip.pending { background: #2a2a1a; color: #888; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Setlist Vote</h1>
+  <p>Pick your songs, rank your favorites</p>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="vote">Vote</button>
+  <button class="tab-btn" data-tab="results">Results</button>
+</div>
+
+<!-- VOTE TAB -->
+<div id="vote" class="tab-panel active">
+  <div class="section-title">Who's voting?</div>
+  <div class="voter-bar" id="voterBar"></div>
+
+  <div id="voteContent" style="display:none;">
+    <!-- Step 1 -->
+    <div class="section-title">Step 1: Girl Song</div>
+    <div class="section-sub">Pick one &mdash; most votes wins a spot on the setlist</div>
+    <div id="girlSongs"></div>
+
+    <!-- Step 2 -->
+    <div class="section-title" style="margin-top:2rem;">Step 2: Rank Your Top 10</div>
+    <div class="section-sub">Tap songs to fill your ranking (1st = 10 pts, 10th = 1 pt). Top 10 overall make the setlist.</div>
+    <div class="rank-pool-label">Available songs:</div>
+    <div class="rank-pool" id="rankPool"></div>
+    <div class="rank-slots" id="rankSlots"></div>
+
+    <button class="submit-btn" id="submitBtn" disabled>Submit Vote</button>
+  </div>
+</div>
+
+<!-- RESULTS TAB -->
+<div id="results" class="tab-panel">
+  <div id="resultsContent"></div>
+</div>
+
+<script>
+const VOTERS = ['Bassy','Ethan','John','Will','Maisy'];
+const AVATAR_CLASS = { Bassy:'av-bassy', Ethan:'av-ethan', John:'av-john', Will:'av-will', Maisy:'av-maisy' };
+
+const PRESET_SONGS = ['Drops of Jupiter','Sex on Fire',"Can't Stop",'Take it Easy'];
+const GIRL_SONGS = ['Man I Need','Choosing Texas','Back to Black','Midnight in Harlem','Angel from Montgomery'];
+const RANK_SONGS = [
+  'Tiny Dancer','This Love','Sweet Emotion','Creep','Cover Me Up',
+  "Don't Let Me Down (Beatles)","Don't Look Back in Anger","Isn't She Lovely",
+  'Fuck You','Eye of the Tiger','Redbone','Ophelia (The Band)',
+  'Sister Golden Hair','Slow Dancing in a Burning Room','Jamming (Bob Marley)',
+  'Take Me Out','Sweet Home Alabama','Rocky Mountain Way','Interstate Love Song',
+  'All Along the Watchtower','Soul to Squeeze','So Far Away / Sultans of Swing',
+  'Hunger Strike',"Franklin's Tower",'Stray Heart (Green Day)','Undone (Weezer)',
+  'Dead Flowers','Sick Love','Heard It in a Love Song','Southern Nights',
+  'Already Gone (Eagles)','Some Strokes Song','The Long Run','Plush',
+  'Misunderstanding (Genesis)','Sunday Morning','Message in a Bottle',
+  'Locked Out of Heaven','One of These Nights','Time (Pink Floyd)',
+  'Fluorescent Adolescent (Arctic Monkeys)','Little Black Submarines (Black Keys)',
+  'Mardy Bum (Arctic Monkeys)'
+];
+
+let currentVoter = null;
+let girlPick = null;
+let rankings = Array(10).fill(null);
+
+// --- Storage ---
+function getData() {
+  return JSON.parse(localStorage.getItem('setlist-votes') || '{}');
+}
+function saveVote(voter, girl, ranks) {
+  const d = getData();
+  d[voter] = { girl, ranks };
+  localStorage.setItem('setlist-votes', JSON.stringify(d));
+}
+
+// --- Voter bar ---
+function renderVoters() {
+  const bar = document.getElementById('voterBar');
+  const data = getData();
+  bar.innerHTML = VOTERS.map(v => `
+    <button class="voter-btn" data-voter="${v}">
+      <div class="avatar ${AVATAR_CLASS[v]} ${currentVoter===v?'selected':''}">${v[0]}</div>
+      <span>${v}${data[v]?' \u2713':''}</span>
+    </button>
+  `).join('');
+  bar.querySelectorAll('.voter-btn').forEach(b => {
+    b.onclick = () => selectVoter(b.dataset.voter);
+  });
+}
+
+function selectVoter(name) {
+  currentVoter = name;
+  const data = getData();
+  if (data[name]) {
+    girlPick = data[name].girl;
+    rankings = [...data[name].ranks];
+  } else {
+    girlPick = null;
+    rankings = Array(10).fill(null);
+  }
+  document.getElementById('voteContent').style.display = 'block';
+  renderVoters();
+  renderGirlSongs();
+  renderRanking();
+  updateSubmit();
+}
+
+// --- Girl songs ---
+function renderGirlSongs() {
+  const el = document.getElementById('girlSongs');
+  el.innerHTML = GIRL_SONGS.map(s => `
+    <div class="song-option ${girlPick===s?'selected':''}" data-song="${s}">
+      <div class="radio"></div>
+      <div class="song-name">${s}</div>
+    </div>
+  `).join('');
+  el.querySelectorAll('.song-option').forEach(o => {
+    o.onclick = () => { girlPick = o.dataset.song; renderGirlSongs(); updateSubmit(); };
+  });
+}
+
+// --- Ranking ---
+function renderRanking() {
+  // Pool
+  const pool = document.getElementById('rankPool');
+  pool.innerHTML = RANK_SONGS.map(s => {
+    const used = rankings.includes(s);
+    return `<div class="pool-chip ${used?'used':''}" data-song="${s}">${s}</div>`;
+  }).join('');
+  pool.querySelectorAll('.pool-chip:not(.used)').forEach(c => {
+    c.onclick = () => addToRanking(c.dataset.song);
+  });
+
+  // Slots
+  const slots = document.getElementById('rankSlots');
+  slots.innerHTML = rankings.map((s, i) => {
+    const pts = 10 - i;
+    return `<div class="rank-slot ${s?'filled':''} rank-${i+1}">
+      <div class="rank-num">${i+1}</div>
+      <div class="rank-song">${s || `#${i+1} (${pts} pts)`}</div>
+      ${s ? `<button class="remove-btn" data-idx="${i}">&times;</button>` : ''}
+    </div>`;
+  }).join('');
+  slots.querySelectorAll('.remove-btn').forEach(b => {
+    b.onclick = (e) => { e.stopPropagation(); removeFromRanking(+b.dataset.idx); };
+  });
+}
+
+function addToRanking(song) {
+  const idx = rankings.indexOf(null);
+  if (idx === -1) return;
+  rankings[idx] = song;
+  renderRanking();
+  updateSubmit();
+}
+
+function removeFromRanking(idx) {
+  rankings[idx] = null;
+  // collapse nulls to end
+  const filled = rankings.filter(r => r !== null);
+  rankings = [...filled, ...Array(10 - filled.length).fill(null)];
+  renderRanking();
+  updateSubmit();
+}
+
+function updateSubmit() {
+  const btn = document.getElementById('submitBtn');
+  const ready = girlPick && rankings.every(r => r !== null);
+  btn.disabled = !ready;
+}
+
+// --- Submit ---
+document.getElementById('submitBtn').onclick = () => {
+  if (!currentVoter || !girlPick || rankings.includes(null)) return;
+  saveVote(currentVoter, girlPick, [...rankings]);
+  renderVoters();
+  alert(`${currentVoter}'s vote saved!`);
+};
+
+// --- Tabs ---
+document.querySelectorAll('.tab-btn').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+    if (t.dataset.tab === 'results') renderResults();
+  };
+});
+
+// --- Results ---
+function renderResults() {
+  const data = getData();
+  const votes = Object.entries(data);
+  const el = document.getElementById('resultsContent');
+
+  if (votes.length === 0) {
+    el.innerHTML = '<div class="no-votes">No votes yet. Go vote!</div>';
+    return;
+  }
+
+  // Vote status
+  let html = '<div class="section-title">Vote Status</div><div class="vote-status">';
+  VOTERS.forEach(v => {
+    html += `<span class="vote-chip ${data[v]?'voted':'pending'}">${v} ${data[v]?'\u2713':'pending'}</span>`;
+  });
+  html += '</div>';
+
+  // Girl song results
+  html += '<div class="results-section"><h3>Girl Song Vote</h3>';
+  const girlTally = {};
+  const girlVoters = {};
+  GIRL_SONGS.forEach(s => { girlTally[s] = 0; girlVoters[s] = []; });
+  votes.forEach(([voter, v]) => { girlTally[v.girl]++; girlVoters[v.girl].push(voter); });
+  const maxGirl = Math.max(...Object.values(girlTally));
+  const girlSorted = [...GIRL_SONGS].sort((a,b) => girlTally[b] - girlTally[a]);
+  const girlWinner = girlTally[girlSorted[0]] > 0 ? girlSorted[0] : null;
+
+  girlSorted.forEach(s => {
+    const pct = votes.length > 0 ? (girlTally[s] / votes.length) * 100 : 0;
+    const isWin = s === girlWinner && girlTally[s] > 0;
+    html += `<div class="girl-result-row ${isWin?'winner':''}">
+      <div style="width:200px">${s}${isWin?'<span class="winner-badge">WINNER</span>':''}</div>
+      <div style="flex:1"><div class="girl-votes-bar" style="width:${pct}%"></div></div>
+      <div style="width:30px;text-align:right;font-weight:600">${girlTally[s]}</div>
+      <div class="result-voters">${girlVoters[s].join(', ')}</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Ranked songs results
+  html += '<div class="results-section"><h3>Ranked Songs (Top 10 Make the Setlist)</h3>';
+  const songScores = {};
+  const songVoters = {};
+  RANK_SONGS.forEach(s => { songScores[s] = 0; songVoters[s] = []; });
+  votes.forEach(([voter, v]) => {
+    v.ranks.forEach((song, i) => {
+      songScores[song] = (songScores[song] || 0) + (10 - i);
+      if (!songVoters[song]) songVoters[song] = [];
+      songVoters[song].push(`${voter}(#${i+1})`);
+    });
+  });
+  const sorted = Object.entries(songScores).sort((a,b) => b[1] - a[1]);
+  sorted.forEach(([song, score], i) => {
+    if (score === 0) return;
+    const inTop = i < 10;
+    html += `<div class="result-row" style="${inTop?'border-left:3px solid #f97316':'border-left:3px solid transparent'}">
+      <div class="result-rank">${i+1}</div>
+      <div class="result-song">${song}${inTop?'<span class="winner-badge">IN</span>':''}</div>
+      <div class="result-score">${score} pts</div>
+      <div class="result-voters">${(songVoters[song]||[]).join(', ')}</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Final setlist
+  html += '<div class="final-setlist"><h3 style="color:#f97316">Final Setlist</h3>';
+  let setlistNum = 1;
+  PRESET_SONGS.forEach(s => {
+    html += `<div class="setlist-item"><span class="setlist-num">${setlistNum++}.</span> ${s} <span class="preset-badge">preset</span></div>`;
+  });
+  if (girlWinner) {
+    html += `<div class="setlist-item"><span class="setlist-num">${setlistNum++}.</span> ${girlWinner} <span class="winner-badge">girl song</span></div>`;
+  }
+  sorted.slice(0, 10).forEach(([song, score]) => {
+    if (score > 0) {
+      html += `<div class="setlist-item"><span class="setlist-num">${setlistNum++}.</span> ${song} <span style="color:#888;font-size:.75rem">${score}pts</span></div>`;
+    }
+  });
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+// Init
+renderVoters();
+</script>
+</body>
+</html>
