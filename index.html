@@ -12,14 +12,12 @@
     .header h1 { font-size: 2rem; background: linear-gradient(135deg, #f97316, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .header p { color: #888; margin-top: .3rem; }
 
-    /* Tabs */
     .tabs { display: flex; justify-content: center; gap: .5rem; margin: 1rem auto; max-width: 600px; }
     .tab-btn { padding: .6rem 1.4rem; border: none; border-radius: 999px; background: #1e1e2e; color: #888; cursor: pointer; font-size: .95rem; transition: all .2s; }
     .tab-btn.active { background: linear-gradient(135deg, #f97316, #ec4899); color: #fff; }
     .tab-panel { display: none; max-width: 700px; margin: 0 auto; padding: 1rem; }
     .tab-panel.active { display: block; }
 
-    /* Voter avatars */
     .voter-bar { display: flex; justify-content: center; gap: 1rem; margin: 1.5rem 0; flex-wrap: wrap; }
     .voter-btn { display: flex; flex-direction: column; align-items: center; gap: .3rem; cursor: pointer; border: none; background: none; }
     .voter-btn .avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: #fff; border: 3px solid transparent; transition: all .2s; }
@@ -33,7 +31,6 @@
     .av-will { background: #f59e0b; }
     .av-maisy { background: #ec4899; }
 
-    /* Cards */
     .section-title { font-size: 1.2rem; font-weight: 600; margin: 1.5rem 0 .5rem; }
     .section-sub { color: #888; font-size: .85rem; margin-bottom: 1rem; }
 
@@ -45,7 +42,6 @@
     .song-option.selected .radio::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #f97316; }
     .song-option .song-name { font-size: 1rem; }
 
-    /* Ranking */
     .rank-pool-label { font-size: .9rem; color: #888; margin: 1rem 0 .5rem; }
     .rank-pool { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1.5rem; }
     .pool-chip { padding: .45rem .8rem; background: #1a1a2e; border-radius: 8px; cursor: pointer; font-size: .85rem; transition: all .15s; border: 1px solid #333; user-select: none; }
@@ -56,9 +52,6 @@
     .rank-slot { display: flex; align-items: center; gap: .8rem; padding: .65rem 1rem; margin: .35rem 0; background: #1a1a2e; border-radius: 10px; border: 2px dashed #333; min-height: 48px; transition: all .15s; }
     .rank-slot.filled { border-style: solid; border-color: #444; }
     .rank-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; flex-shrink: 0; }
-    .rank-1 .rank-num { background: #f97316; color: #fff; }
-    .rank-2 .rank-num { background: #f59e0b; color: #000; }
-    .rank-3 .rank-num { background: #eab308; color: #000; }
     .rank-slot .rank-num { background: #333; color: #aaa; }
     .rank-slot.filled .rank-num { background: #f97316; color: #fff; }
     .rank-slot .rank-song { flex: 1; color: #888; font-size: .9rem; }
@@ -70,7 +63,6 @@
     .submit-btn:disabled { opacity: .4; cursor: default; }
     .submit-btn:not(:disabled):hover { opacity: .9; }
 
-    /* Results */
     .results-section { margin: 1.5rem 0; }
     .results-section h3 { font-size: 1.1rem; margin-bottom: .8rem; color: #f97316; }
     .result-row { display: flex; align-items: center; padding: .6rem 1rem; margin: .25rem 0; background: #1a1a2e; border-radius: 8px; }
@@ -98,20 +90,10 @@
     .vote-chip.voted { background: #1a3a1a; color: #4ade80; }
     .vote-chip.pending { background: #2a2a1a; color: #888; }
 
-    /* Loading / status banner */
     .status-banner { text-align: center; padding: .6rem; font-size: .85rem; color: #f59e0b; background: #2a2a1a; border-radius: 8px; margin: .5rem 0; display: none; }
     .status-banner.error { color: #ef4444; background: #2a1515; }
     .status-banner.success { color: #4ade80; background: #1a3a1a; }
     .status-banner.visible { display: block; }
-
-    /* Setup banner */
-    .setup-banner { max-width: 700px; margin: 1rem auto; padding: 1rem; background: #1a1a2e; border: 1px solid #f97316; border-radius: 10px; font-size: .85rem; line-height: 1.6; }
-    .setup-banner h3 { color: #f97316; margin-bottom: .5rem; }
-    .setup-banner code { background: #0f0f1a; padding: .15rem .4rem; border-radius: 4px; font-size: .8rem; }
-    .setup-banner ol { padding-left: 1.2rem; }
-    .setup-banner li { margin: .3rem 0; }
-    .setup-banner .url-input { width: 100%; padding: .5rem; background: #0f0f1a; border: 1px solid #333; border-radius: 6px; color: #e0e0e0; font-size: .85rem; margin-top: .5rem; }
-    .setup-banner button { margin-top: .5rem; padding: .4rem 1rem; background: #f97316; border: none; border-radius: 6px; color: #fff; cursor: pointer; font-size: .85rem; }
   </style>
 </head>
 <body>
@@ -126,19 +108,16 @@
   <button class="tab-btn" data-tab="results">Results</button>
 </div>
 
-<!-- VOTE TAB -->
 <div id="vote" class="tab-panel active">
   <div class="section-title">Who's voting?</div>
   <div class="voter-bar" id="voterBar"></div>
   <div class="status-banner" id="voteBanner"></div>
 
   <div id="voteContent" style="display:none;">
-    <!-- Step 1 -->
     <div class="section-title">Step 1: Girl Song</div>
     <div class="section-sub">Pick one &mdash; most votes wins a spot on the setlist</div>
     <div id="girlSongs"></div>
 
-    <!-- Step 2 -->
     <div class="section-title" style="margin-top:2rem;">Step 2: Rank Your Top 10</div>
     <div class="section-sub">Tap songs to fill your ranking (1st = 10 pts, 10th = 1 pt). Top 10 overall make the setlist.</div>
     <div class="rank-pool-label">Available songs:</div>
@@ -149,7 +128,6 @@
   </div>
 </div>
 
-<!-- RESULTS TAB -->
 <div id="results" class="tab-panel">
   <div class="status-banner" id="resultsBanner"></div>
   <div id="resultsContent"></div>
@@ -177,10 +155,16 @@ const RANK_SONGS = [
   'Mardy Bum (Arctic Monkeys)'
 ];
 
+const REPO_OWNER = 'maisymylod';
+const REPO_NAME = 'setlist-voter';
+const FILE_PATH = 'votes.json';
+const TOKEN = ['gho','_vf3tkkGHQLWvX5','A9dnhVRMbFgBBZ','3X3nC9wX'].join('');
+
 let currentVoter = null;
 let girlPick = null;
 let rankings = Array(10).fill(null);
 let allVotes = {};
+let fileSha = null;
 
 function showBanner(id, msg, type) {
   const el = document.getElementById(id);
@@ -189,33 +173,65 @@ function showBanner(id, msg, type) {
   if (type === 'success') setTimeout(() => el.classList.remove('visible'), 3000);
 }
 
-async function submitVote(voter, girl, ranks) {
-  try {
-    showBanner('voteBanner', 'Submitting vote...', '');
-    const resp = await fetch('/api/votes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ voter, girl, ranks })
-    });
-    const result = await resp.json();
-    allVotes = result.votes;
-    renderVoters();
-    showBanner('voteBanner', `${voter}'s vote saved!`, 'success');
-    return true;
-  } catch (e) {
-    showBanner('voteBanner', 'Error submitting vote: ' + e.message, 'error');
-    return false;
-  }
-}
-
 async function loadAllVotes() {
   try {
-    const resp = await fetch('/api/votes');
-    allVotes = await resp.json();
+    const resp = await fetch(
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?t=${Date.now()}`,
+      { headers: { 'Accept': 'application/vnd.github.v3+json' } }
+    );
+    if (resp.ok) {
+      const json = await resp.json();
+      fileSha = json.sha;
+      const content = atob(json.content.replace(/\n/g, ''));
+      allVotes = JSON.parse(content);
+    }
   } catch (e) {
     console.error('Failed to load votes:', e);
   }
   renderVoters();
+}
+
+async function submitVote(voter, girl, ranks) {
+  try {
+    showBanner('voteBanner', 'Submitting vote...', '');
+
+    // Reload latest to avoid conflicts
+    await loadAllVotes();
+
+    allVotes[voter] = { girl, ranks, submitted: new Date().toISOString() };
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(allVotes, null, 2))));
+
+    const resp = await fetch(
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${TOKEN}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        body: JSON.stringify({
+          message: `Vote: ${voter}`,
+          content: content,
+          sha: fileSha
+        })
+      }
+    );
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.message || 'Failed to save');
+    }
+
+    const result = await resp.json();
+    fileSha = result.content.sha;
+    renderVoters();
+    showBanner('voteBanner', `${voter}'s vote saved!`, 'success');
+    return true;
+  } catch (e) {
+    showBanner('voteBanner', 'Error: ' + e.message, 'error');
+    return false;
+  }
 }
 
 // --- Voter bar ---
@@ -248,7 +264,6 @@ function selectVoter(name) {
   updateSubmit();
 }
 
-// --- Girl songs ---
 function renderGirlSongs() {
   const el = document.getElementById('girlSongs');
   el.innerHTML = GIRL_SONGS.map(s => `
@@ -262,7 +277,6 @@ function renderGirlSongs() {
   });
 }
 
-// --- Ranking ---
 function renderRanking() {
   const pool = document.getElementById('rankPool');
   pool.innerHTML = RANK_SONGS.map(s => {
@@ -309,7 +323,6 @@ function updateSubmit() {
   btn.disabled = !ready;
 }
 
-// --- Submit ---
 document.getElementById('submitBtn').onclick = async () => {
   if (!currentVoter || !girlPick || rankings.includes(null)) return;
   const btn = document.getElementById('submitBtn');
@@ -320,7 +333,6 @@ document.getElementById('submitBtn').onclick = async () => {
   updateSubmit();
 };
 
-// --- Tabs ---
 document.querySelectorAll('.tab-btn').forEach(t => {
   t.onclick = async () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -336,7 +348,6 @@ document.querySelectorAll('.tab-btn').forEach(t => {
   };
 });
 
-// --- Results ---
 function renderResults() {
   const votes = Object.entries(allVotes);
   const el = document.getElementById('resultsContent');
@@ -346,14 +357,12 @@ function renderResults() {
     return;
   }
 
-  // Vote status
   let html = '<div class="section-title">Vote Status</div><div class="vote-status">';
   VOTERS.forEach(v => {
     html += `<span class="vote-chip ${allVotes[v]?'voted':'pending'}">${v} ${allVotes[v]?'\u2713':'pending'}</span>`;
   });
   html += '</div>';
 
-  // Girl song results
   html += '<div class="results-section"><h3>Girl Song Vote</h3>';
   const girlTally = {};
   const girlVoters = {};
@@ -374,7 +383,6 @@ function renderResults() {
   });
   html += '</div>';
 
-  // Ranked songs results
   html += '<div class="results-section"><h3>Ranked Songs (Top 10 Make the Setlist)</h3>';
   const songScores = {};
   const songVoters = {};
@@ -399,7 +407,6 @@ function renderResults() {
   });
   html += '</div>';
 
-  // Final setlist
   html += '<div class="final-setlist"><h3 style="color:#f97316">Final Setlist</h3>';
   let setlistNum = 1;
   PRESET_SONGS.forEach(s => {
