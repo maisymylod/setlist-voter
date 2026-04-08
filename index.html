@@ -97,6 +97,21 @@
     .vote-chip { padding: .25rem .6rem; border-radius: 999px; font-size: .75rem; }
     .vote-chip.voted { background: #1a3a1a; color: #4ade80; }
     .vote-chip.pending { background: #2a2a1a; color: #888; }
+
+    /* Loading / status banner */
+    .status-banner { text-align: center; padding: .6rem; font-size: .85rem; color: #f59e0b; background: #2a2a1a; border-radius: 8px; margin: .5rem 0; display: none; }
+    .status-banner.error { color: #ef4444; background: #2a1515; }
+    .status-banner.success { color: #4ade80; background: #1a3a1a; }
+    .status-banner.visible { display: block; }
+
+    /* Setup banner */
+    .setup-banner { max-width: 700px; margin: 1rem auto; padding: 1rem; background: #1a1a2e; border: 1px solid #f97316; border-radius: 10px; font-size: .85rem; line-height: 1.6; }
+    .setup-banner h3 { color: #f97316; margin-bottom: .5rem; }
+    .setup-banner code { background: #0f0f1a; padding: .15rem .4rem; border-radius: 4px; font-size: .8rem; }
+    .setup-banner ol { padding-left: 1.2rem; }
+    .setup-banner li { margin: .3rem 0; }
+    .setup-banner .url-input { width: 100%; padding: .5rem; background: #0f0f1a; border: 1px solid #333; border-radius: 6px; color: #e0e0e0; font-size: .85rem; margin-top: .5rem; }
+    .setup-banner button { margin-top: .5rem; padding: .4rem 1rem; background: #f97316; border: none; border-radius: 6px; color: #fff; cursor: pointer; font-size: .85rem; }
   </style>
 </head>
 <body>
@@ -104,6 +119,20 @@
 <div class="header">
   <h1>Setlist Vote</h1>
   <p>Pick your songs, rank your favorites</p>
+</div>
+
+<!-- Setup banner (only shows if no script URL configured) -->
+<div class="setup-banner" id="setupBanner" style="display:none;">
+  <h3>Google Sheets Setup</h3>
+  <ol>
+    <li>Create a new Google Sheet</li>
+    <li>Go to <strong>Extensions &gt; Apps Script</strong></li>
+    <li>Paste the script from <code>apps-script.js</code> in this repo</li>
+    <li>Click <strong>Deploy &gt; New deployment</strong>, choose <strong>Web app</strong>, set access to <strong>Anyone</strong></li>
+    <li>Copy the deployment URL and paste it below:</li>
+  </ol>
+  <input class="url-input" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec" />
+  <button onclick="saveScriptUrl()">Save</button>
 </div>
 
 <div class="tabs">
@@ -115,6 +144,7 @@
 <div id="vote" class="tab-panel active">
   <div class="section-title">Who's voting?</div>
   <div class="voter-bar" id="voterBar"></div>
+  <div class="status-banner" id="voteBanner"></div>
 
   <div id="voteContent" style="display:none;">
     <!-- Step 1 -->
@@ -135,6 +165,7 @@
 
 <!-- RESULTS TAB -->
 <div id="results" class="tab-panel">
+  <div class="status-banner" id="resultsBanner"></div>
   <div id="resultsContent"></div>
 </div>
 
@@ -163,25 +194,75 @@ const RANK_SONGS = [
 let currentVoter = null;
 let girlPick = null;
 let rankings = Array(10).fill(null);
+let allVotes = {}; // shared vote data from Google Sheets
 
-// --- Storage ---
-function getData() {
-  return JSON.parse(localStorage.getItem('setlist-votes') || '{}');
+// --- Google Sheets backend ---
+function getScriptUrl() {
+  return localStorage.getItem('setlist-script-url') || '';
 }
-function saveVote(voter, girl, ranks) {
-  const d = getData();
-  d[voter] = { girl, ranks };
-  localStorage.setItem('setlist-votes', JSON.stringify(d));
+function saveScriptUrl() {
+  const url = document.getElementById('scriptUrlInput').value.trim();
+  if (url) {
+    localStorage.setItem('setlist-script-url', url);
+    document.getElementById('setupBanner').style.display = 'none';
+    loadAllVotes();
+  }
+}
+function checkSetup() {
+  if (!getScriptUrl()) {
+    document.getElementById('setupBanner').style.display = 'block';
+  }
+}
+
+function showBanner(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status-banner visible ' + (type || '');
+  if (type === 'success') setTimeout(() => el.classList.remove('visible'), 3000);
+}
+
+async function submitToSheet(voter, girl, ranks) {
+  const url = getScriptUrl();
+  if (!url) { alert('Please set up Google Sheets URL first.'); return false; }
+  try {
+    showBanner('voteBanner', 'Submitting vote...', '');
+    const resp = await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ voter, girl, ranks })
+    });
+    // no-cors means we can't read the response, so we wait a beat then reload
+    await new Promise(r => setTimeout(r, 1500));
+    await loadAllVotes();
+    showBanner('voteBanner', `${voter}'s vote saved!`, 'success');
+    return true;
+  } catch (e) {
+    showBanner('voteBanner', 'Error submitting vote: ' + e.message, 'error');
+    return false;
+  }
+}
+
+async function loadAllVotes() {
+  const url = getScriptUrl();
+  if (!url) return;
+  try {
+    const resp = await fetch(url + '?t=' + Date.now());
+    const data = await resp.json();
+    allVotes = data;
+    renderVoters();
+  } catch (e) {
+    console.error('Failed to load votes:', e);
+  }
 }
 
 // --- Voter bar ---
 function renderVoters() {
   const bar = document.getElementById('voterBar');
-  const data = getData();
   bar.innerHTML = VOTERS.map(v => `
     <button class="voter-btn" data-voter="${v}">
       <div class="avatar ${AVATAR_CLASS[v]} ${currentVoter===v?'selected':''}">${v[0]}</div>
-      <span>${v}${data[v]?' \u2713':''}</span>
+      <span>${v}${allVotes[v]?' \u2713':''}</span>
     </button>
   `).join('');
   bar.querySelectorAll('.voter-btn').forEach(b => {
@@ -191,10 +272,9 @@ function renderVoters() {
 
 function selectVoter(name) {
   currentVoter = name;
-  const data = getData();
-  if (data[name]) {
-    girlPick = data[name].girl;
-    rankings = [...data[name].ranks];
+  if (allVotes[name]) {
+    girlPick = allVotes[name].girl;
+    rankings = [...allVotes[name].ranks];
   } else {
     girlPick = null;
     rankings = Array(10).fill(null);
@@ -222,7 +302,6 @@ function renderGirlSongs() {
 
 // --- Ranking ---
 function renderRanking() {
-  // Pool
   const pool = document.getElementById('rankPool');
   pool.innerHTML = RANK_SONGS.map(s => {
     const used = rankings.includes(s);
@@ -232,7 +311,6 @@ function renderRanking() {
     c.onclick = () => addToRanking(c.dataset.song);
   });
 
-  // Slots
   const slots = document.getElementById('rankSlots');
   slots.innerHTML = rankings.map((s, i) => {
     const pts = 10 - i;
@@ -257,7 +335,6 @@ function addToRanking(song) {
 
 function removeFromRanking(idx) {
   rankings[idx] = null;
-  // collapse nulls to end
   const filled = rankings.filter(r => r !== null);
   rankings = [...filled, ...Array(10 - filled.length).fill(null)];
   renderRanking();
@@ -271,28 +348,35 @@ function updateSubmit() {
 }
 
 // --- Submit ---
-document.getElementById('submitBtn').onclick = () => {
+document.getElementById('submitBtn').onclick = async () => {
   if (!currentVoter || !girlPick || rankings.includes(null)) return;
-  saveVote(currentVoter, girlPick, [...rankings]);
-  renderVoters();
-  alert(`${currentVoter}'s vote saved!`);
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+  await submitToSheet(currentVoter, girlPick, [...rankings]);
+  btn.textContent = 'Submit Vote';
+  updateSubmit();
 };
 
 // --- Tabs ---
 document.querySelectorAll('.tab-btn').forEach(t => {
-  t.onclick = () => {
+  t.onclick = async () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     t.classList.add('active');
     document.getElementById(t.dataset.tab).classList.add('active');
-    if (t.dataset.tab === 'results') renderResults();
+    if (t.dataset.tab === 'results') {
+      showBanner('resultsBanner', 'Loading results...', '');
+      await loadAllVotes();
+      document.getElementById('resultsBanner').classList.remove('visible');
+      renderResults();
+    }
   };
 });
 
 // --- Results ---
 function renderResults() {
-  const data = getData();
-  const votes = Object.entries(data);
+  const votes = Object.entries(allVotes);
   const el = document.getElementById('resultsContent');
 
   if (votes.length === 0) {
@@ -303,7 +387,7 @@ function renderResults() {
   // Vote status
   let html = '<div class="section-title">Vote Status</div><div class="vote-status">';
   VOTERS.forEach(v => {
-    html += `<span class="vote-chip ${data[v]?'voted':'pending'}">${v} ${data[v]?'\u2713':'pending'}</span>`;
+    html += `<span class="vote-chip ${allVotes[v]?'voted':'pending'}">${v} ${allVotes[v]?'\u2713':'pending'}</span>`;
   });
   html += '</div>';
 
@@ -313,7 +397,6 @@ function renderResults() {
   const girlVoters = {};
   GIRL_SONGS.forEach(s => { girlTally[s] = 0; girlVoters[s] = []; });
   votes.forEach(([voter, v]) => { girlTally[v.girl]++; girlVoters[v.girl].push(voter); });
-  const maxGirl = Math.max(...Object.values(girlTally));
   const girlSorted = [...GIRL_SONGS].sort((a,b) => girlTally[b] - girlTally[a]);
   const girlWinner = girlTally[girlSorted[0]] > 0 ? girlSorted[0] : null;
 
@@ -374,7 +457,8 @@ function renderResults() {
 }
 
 // Init
-renderVoters();
+checkSetup();
+loadAllVotes();
 </script>
 </body>
 </html>
