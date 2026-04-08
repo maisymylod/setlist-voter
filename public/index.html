@@ -121,20 +121,6 @@
   <p>Pick your songs, rank your favorites</p>
 </div>
 
-<!-- Setup banner (only shows if no script URL configured) -->
-<div class="setup-banner" id="setupBanner" style="display:none;">
-  <h3>Google Sheets Setup</h3>
-  <ol>
-    <li>Create a new Google Sheet</li>
-    <li>Go to <strong>Extensions &gt; Apps Script</strong></li>
-    <li>Paste the script from <code>apps-script.js</code> in this repo</li>
-    <li>Click <strong>Deploy &gt; New deployment</strong>, choose <strong>Web app</strong>, set access to <strong>Anyone</strong></li>
-    <li>Copy the deployment URL and paste it below:</li>
-  </ol>
-  <input class="url-input" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec" />
-  <button onclick="saveScriptUrl()">Save</button>
-</div>
-
 <div class="tabs">
   <button class="tab-btn active" data-tab="vote">Vote</button>
   <button class="tab-btn" data-tab="results">Results</button>
@@ -194,25 +180,7 @@ const RANK_SONGS = [
 let currentVoter = null;
 let girlPick = null;
 let rankings = Array(10).fill(null);
-let allVotes = {}; // shared vote data from Google Sheets
-
-// --- Google Sheets backend ---
-function getScriptUrl() {
-  return localStorage.getItem('setlist-script-url') || '';
-}
-function saveScriptUrl() {
-  const url = document.getElementById('scriptUrlInput').value.trim();
-  if (url) {
-    localStorage.setItem('setlist-script-url', url);
-    document.getElementById('setupBanner').style.display = 'none';
-    loadAllVotes();
-  }
-}
-function checkSetup() {
-  if (!getScriptUrl()) {
-    document.getElementById('setupBanner').style.display = 'block';
-  }
-}
+let allVotes = {};
 
 function showBanner(id, msg, type) {
   const el = document.getElementById(id);
@@ -221,18 +189,17 @@ function showBanner(id, msg, type) {
   if (type === 'success') setTimeout(() => el.classList.remove('visible'), 3000);
 }
 
-async function submitToSheet(voter, girl, ranks) {
-  const url = getScriptUrl();
-  if (!url) { alert('Please set up Google Sheets URL first.'); return false; }
+async function submitVote(voter, girl, ranks) {
   try {
     showBanner('voteBanner', 'Submitting vote...', '');
-    const resp = await fetch(url, {
+    const resp = await fetch('/api/votes', {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ voter, girl, ranks }),
-      redirect: 'follow'
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voter, girl, ranks })
     });
-    await loadAllVotes();
+    const result = await resp.json();
+    allVotes = result.votes;
+    renderVoters();
     showBanner('voteBanner', `${voter}'s vote saved!`, 'success');
     return true;
   } catch (e) {
@@ -242,15 +209,9 @@ async function submitToSheet(voter, girl, ranks) {
 }
 
 async function loadAllVotes() {
-  const url = getScriptUrl();
-  if (!url) return;
   try {
-    const resp = await fetch(url + '?t=' + Date.now(), { redirect: 'follow' });
-    const text = await resp.text();
-    if (text) {
-      const data = JSON.parse(text);
-      allVotes = data;
-    }
+    const resp = await fetch('/api/votes');
+    allVotes = await resp.json();
   } catch (e) {
     console.error('Failed to load votes:', e);
   }
@@ -354,7 +315,7 @@ document.getElementById('submitBtn').onclick = async () => {
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
   btn.textContent = 'Submitting...';
-  await submitToSheet(currentVoter, girlPick, [...rankings]);
+  await submitVote(currentVoter, girlPick, [...rankings]);
   btn.textContent = 'Submit Vote';
   updateSubmit();
 };
@@ -459,7 +420,6 @@ function renderResults() {
 
 // Init
 renderVoters();
-checkSetup();
 loadAllVotes();
 </script>
 </body>
