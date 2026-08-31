@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: HTML validity + no committed credentials
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install the validator
+        run: pip install html5validator==0.4.2
+
+      - name: HTML is valid
+        # CSS messages are filtered: the bundled checker is stale and reports
+        # inset and backdrop-filter as nonexistent properties.
+        run: html5validator --root . --ignore 'CSS:'
+
+      - name: votes.json is valid JSON
+        run: python -c "import json; json.load(open('votes.json'))"
+
+      - name: No credentials, including split or encoded ones
+        run: python scripts/check_no_secrets.py
