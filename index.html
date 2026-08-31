@@ -158,7 +158,18 @@ const RANK_SONGS = [
 const REPO_OWNER = 'maisymylod';
 const REPO_NAME = 'setlist-voter';
 const FILE_PATH = 'votes.json';
-const TOKEN = ['gho','_vf3tkkGHQLWvX5','A9dnhVRMbFgBBZ','3X3nC9wX'].join('');
+// Vote submission is disabled.
+//
+// Writing to votes.json needs a GitHub token with repo scope, and a static
+// page has nowhere to keep one: anything shipped here is readable by anyone
+// who opens the page. A token used to live on this line, split across an
+// array so it would not match a secret scanner. That hid it from tooling,
+// not from readers, and it has been revoked.
+//
+// Reading votes below is unauthenticated and still works, so results
+// continue to display. Re-enabling submission needs somewhere to hold the
+// credential: a small backend, a GitHub App, or a form service.
+const SUBMISSIONS_ENABLED = false;
 
 let currentVoter = null;
 let girlPick = null;
@@ -192,6 +203,14 @@ async function loadAllVotes() {
 }
 
 async function submitVote(voter, girl, ranks) {
+  if (!SUBMISSIONS_ENABLED) {
+    showBanner(
+      'voteBanner',
+      'Voting is closed. Results below are the votes already recorded.',
+      'error'
+    );
+    return;
+  }
   try {
     showBanner('voteBanner', 'Submitting vote...', '');
 
@@ -206,7 +225,6 @@ async function submitVote(voter, girl, ranks) {
       {
         method: 'PUT',
         headers: {
-          'Authorization': `token ${TOKEN}`,
           'Content-Type': 'application/json',
           'Accept': 'application/vnd.github.v3+json'
         },
